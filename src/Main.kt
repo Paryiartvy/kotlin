@@ -1,3 +1,5 @@
+import java.awt.Canvas
+
 interface HaveId{
     val id: String
 }
@@ -54,6 +56,7 @@ class ReminderNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){
         return "${data.txt}: ${if (data.status) "сделано" else "не сделано"}"
     }
 }
+
 class Notebook(): CanvasUnit{
     private var notes: MutableList<Note<*>> = mutableListOf()
 
@@ -65,5 +68,30 @@ class Notebook(): CanvasUnit{
     }
     override fun drawCanvas(): String{
         return notes.joinToString("\n") {it.drawCanvas()}
+    }
+}
+
+class ConsoleUI(){
+    fun showMenuList(items: List<String>): Int{
+        println("Выберите действие:")
+        var k = 0
+        for (i in items){
+            println("$k) $i")
+        k += 1
+        }
+        return readInt("Введите номер выбранной команды: ")
+    }
+    fun showCanvas(canvas: CanvasUnit){
+        println(canvas.drawCanvas())
+    }
+    fun readString(userMessage: String = "Введите строковое значение"): String{
+        println(userMessage)
+        val str: String? = readLine()
+        return str ?: ""
+    }
+    fun readInt(userMessage: String = "Введите целочисленное значение"): Int{
+        println(userMessage)
+        val tmp: Int? = readLine()?.toIntOrNull()
+        return tmp ?: -1
     }
 }
