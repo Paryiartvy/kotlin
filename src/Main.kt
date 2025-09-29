@@ -9,6 +9,7 @@ interface CanvasUnit{
 }
 
 class Storage<T: HaveId>(){
+//    просто хранилище с матодами добавления, удаления, считывания
     private var data: MutableList<T> = mutableListOf()
 
     fun add(item: T) = data.add(item)
@@ -17,14 +18,14 @@ class Storage<T: HaveId>(){
     fun valueById(id: String) = data.find { it.id == id }
 }
 
-data class TextNoteModel(
+data class TextNoteModel( //класс базовой инфы о заметкие. требует поле id, остальные опциональны (имя, текст, статус)
     override var id: String,
-    var name: String,
+    var name: String = "",
     var txt: String = "",
     var status: Boolean = false
 ): HaveId
 
-open class Note<Data: HaveId>(initialData: Data): CanvasUnit{
+open class Note<Data: HaveId>(initialData: Data): CanvasUnit{ //базовый класс заметки. хранит историю изменений заметки, поддерживает обновление содержимого, отображение, удаление
     private var localStorage: Storage<Data> = Storage()
     var data: Data = initialData
         set(value){
@@ -45,19 +46,19 @@ open class Note<Data: HaveId>(initialData: Data): CanvasUnit{
     }
 }
 
-class TextNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){
+class TextNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){// экземпляр текстовой заметки
     override fun drawCanvas(): String{
         return "${data.name}: ${data.txt}"
     }
 }
 
-class ReminderNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){
+class ReminderNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){//экземпляр напоминалки
     override fun drawCanvas(): String {
         return "${data.txt}: ${if (data.status) "сделано" else "не сделано"}"
     }
 }
 
-class Notebook(): CanvasUnit{
+class Notebook(): CanvasUnit{// класс для хранения списка заметок. можно добавлять, удалять и отображать все заметки
     private var notes: MutableList<Note<*>> = mutableListOf()
 
     fun add(note: Note<*>){
@@ -74,7 +75,7 @@ class Notebook(): CanvasUnit{
 class ConsoleUI(){
     fun showMenuList(items: List<String>): Int{
         println("Выберите действие:")
-        var k = 0
+        var k = 1
         for (i in items){
             println("$k) $i")
         k += 1
@@ -94,4 +95,9 @@ class ConsoleUI(){
         val tmp: Int? = readLine()?.toIntOrNull()
         return tmp ?: -1
     }
+}
+
+class Menu(){
+    val ui = ConsoleUI()
+    var notebook = Notebook()
 }
