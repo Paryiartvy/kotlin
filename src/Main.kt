@@ -31,9 +31,10 @@ open class Note<Data: HaveId>(initialData: Data): CanvasUnit{
         }
         get() = field
 
-    override fun drawCanvas(): String{
-        return localStorage.toString()
+    override fun drawCanvas(): String {
+        return localStorage.getAll().joinToString("\n") { it.toString() }
     }
+
     fun update(data: Data) {
         this.data = data
     }
@@ -51,5 +52,18 @@ class TextNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){
 class ReminderNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){
     override fun drawCanvas(): String {
         return "${data.txt}: ${if (data.status) "сделано" else "не сделано"}"
+    }
+}
+class Notebook(): CanvasUnit{
+    private var notes: MutableList<Note<*>> = mutableListOf()
+
+    fun add(note: Note<*>){
+        notes.add(note)
+    }
+    fun remove(index: Int){
+        notes.removeAt(index)
+    }
+    override fun drawCanvas(): String{
+        return notes.joinToString("\n") {it.drawCanvas()}
     }
 }
