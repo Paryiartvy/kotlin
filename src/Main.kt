@@ -48,24 +48,49 @@ open class Note<Data: HaveId>(initialData: Data): CanvasUnit{ //базовый �
 
 class TextNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){// экземпляр текстовой заметки
     override fun drawCanvas(): String{
-        return "${data.name}: ${data.txt}"
+        return """id:${data.id}
+            ${data.name}: ${data.txt}""".trimIndent()
     }
 }
 
 class ReminderNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){//экземпляр напоминалки
     override fun drawCanvas(): String {
-        return "${data.txt}: ${if (data.status) "сделано" else "не сделано"}"
+        return """id:${data.id}
+            ${data.txt}: ${if (data.status) "сделано" else "не сделано"}""".trimIndent()
     }
 }
 
 class Notebook(): CanvasUnit{// класс для хранения списка заметок. можно добавлять, удалять и отображать все заметки
     private var notes: MutableList<Note<*>> = mutableListOf()
+    private var lastId = 0
 
+    fun getLastId() = lastId
     fun add(note: Note<*>){
         notes.add(note)
+        lastId += 1
     }
     fun remove(index: Int){
         notes.removeAt(index)
+    }
+    fun removeById(id: String) {
+        val note = notes.find { it.data.id == id }
+        if (note != null) {
+            note.willRemove()
+            notes.remove(note)
+        }
+    }
+
+    fun getById(id: String): Note<*>?{
+        val note = notes.find { it.data.id == id }
+        if (note != null) {
+            return note
+        }
+        else
+            return null
+    }
+
+    fun existsId(id: String): Boolean {
+        return notes.any { it.data.id == id }
     }
     override fun drawCanvas(): String{
         return notes.joinToString("\n") {it.drawCanvas()}
@@ -98,6 +123,101 @@ class ConsoleUI(){
 }
 
 class Menu(){
-    val ui = ConsoleUI()
-    var notebook = Notebook()
+    private val ui = ConsoleUI()
+    private val notebook = Notebook()
+
+    fun choice(){
+        var fl = true
+        while (fl){
+            val userInput =
+                ui.showMenuList(listOf("Просмотр всех заметок", "Добавить заметку", "Редактировать заметку", "Удалить заметку", "Выход"))
+            when (userInput){
+                1 -> ui.showCanvas(notebook)
+                2 -> addNote()
+                3 -> editNote()
+                4 -> deleteNote()
+                5 -> fl = false
+                else -> println("Некорректный ввод")
+            }
+        }
+    }
+
+    fun addNote(){
+        var fl = true
+        while (fl){
+            val userInput =
+                ui.showMenuList(listOf("Добавить текстовую заметку", "Добавить заметку-напоминание", "Выход"))
+            when (userInput){
+                1 -> {addTextNote(); fl = false}
+                2 -> {addReminderNote(); fl = false}
+                3 -> fl = false
+                else -> println("Некорректный ввод")
+            }
+        }
+    }
+    fun addTextNote(){
+        val name =
+            ui.readString("Введите имя заметки:")
+        val txt =
+            ui.readString("Введите текст заметки:")
+        notebook.add(TextNote(TextNoteModel(notebook.getLastId().toString(),name, txt)))
+    }
+    fun addReminderNote(){
+        val txt =
+            ui.readString("Введите текст заметки:")
+        notebook.add(ReminderNote(TextNoteModel(notebook.getLastId().toString(),"", txt)))
+    }
+
+    fun editNote(){
+        var fl = true
+        while (fl){
+            val userInput =
+                ui.readString("Введите id заметки, которую хотите изменить")
+            if (notebook.existsId(userInput)){
+                val tmp = notebook.getById(userInput)
+                tmp?.let{
+                    when (it) {
+                        is TextNote -> {
+                            val newName = ui.readString("Введите новое имя заметки:")
+                            val newText = ui.readString("Введите новый текст заметки:")
+                            it.update(TextNoteModel(it.data.id, newName, newText))
+                        }
+                        is ReminderNote -> {
+                            val newText = ui.readString("Введите новый текст напоминания:")
+                            val newStatus = ui.readInt("Введите статус (1 — сделано, 0 — не сделано):")
+                            it.update(
+                                TextNoteModel(
+                                    it.data.id,
+                                    "",
+                                    newText,
+                                    status = (newStatus == 1)
+                                )
+                            )
+                        }
+                    }
+                }
+                println("Заметка успешно изменена")
+                fl = false
+            }
+            else {
+                println("Id не найден")
+            }
+        }
+    }
+
+    fun deleteNote(){
+        var fl = true
+        while (fl){
+            val userInput =
+                ui.readString("Введите id заметки, которую хотите удалить")
+            if (notebook.existsId(userInput)){
+                notebook.removeById(userInput)
+                println("Заметка успешно удалена")
+                fl = false
+            }
+            else {
+                println("Id не найден")
+            }
+        }
+    }
 }
