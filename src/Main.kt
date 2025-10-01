@@ -221,3 +221,14 @@ class Menu(){
         }
     }
 }
+
+class NoteApp{
+    private val menu = Menu()
+    fun start() = menu.choice()
+}
+
+
+fun main(){
+    val  app = NoteApp()
+    app.start()
+}
