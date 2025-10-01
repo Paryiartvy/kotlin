@@ -1,5 +1,3 @@
-import java.awt.Canvas
-
 interface HaveId{
     val id: String
 }
