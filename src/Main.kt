@@ -1,3 +1,6 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 interface HaveId{
     val id: String
 }
@@ -6,8 +9,13 @@ interface CanvasUnit{
     fun drawCanvas(): String
 }
 
+data class SimpleDateFormatter(var date: LocalDateTime) {// принимает дату, может вернуть ее в строковом виде
+private val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+    fun format(): String = date.format(formatter)
+}
+
 class Storage<T: HaveId>(){
-//    просто хранилище с матодами добавления, удаления, считывания
+    //    просто хранилище с матодами добавления, удаления, считывания
     private var data: MutableList<T> = mutableListOf()
 
     fun add(item: T) = data.add(item)
@@ -23,8 +31,12 @@ data class TextNoteModel( //класс базовой инфы о заметки
     var status: Boolean = false
 ): HaveId
 
-open class Note<Data: HaveId>(initialData: Data): CanvasUnit{ //базовый класс заметки. хранит историю изменений заметки, поддерживает обновление содержимого, отображение, удаление
+open class Note<Data: HaveId>(initialData: Data, date: String): CanvasUnit{ //базовый класс заметки. хранит историю изменений заметки, поддерживает обновление содержимого, отображение, удаление
     private var localStorage: Storage<Data> = Storage()
+    var createDate: String = date
+        private set
+    var updateDate: String = ""
+        private set
     var data: Data = initialData
         set(value){
             field = value
@@ -36,30 +48,35 @@ open class Note<Data: HaveId>(initialData: Data): CanvasUnit{ //базовый �
         return localStorage.getAll().joinToString("\n") { it.toString() }
     }
 
-    fun update(data: Data) {
+    fun update(data: Data, date: String) {
         this.data = data
+        updateDate = date
     }
     fun willRemove(){
         localStorage = Storage()
     }
 }
 
-class TextNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){// экземпляр текстовой заметки
-    override fun drawCanvas(): String{
-        return """id:${data.id}
-            ${data.name}: ${data.txt}""".trimIndent()
-    }
+class TextNote(noteData: TextNoteModel, date: String): Note<TextNoteModel>(noteData, date){// экземпляр текстовой заметки
+override fun drawCanvas(): String{
+    return """id:${data.id}
+            ${data.name}: ${data.txt}
+            Создано:${createDate}
+            Изменено:${updateDate}""".trimIndent()
+}
 }
 
-class ReminderNote(noteData: TextNoteModel): Note<TextNoteModel>(noteData){//экземпляр напоминалки
-    override fun drawCanvas(): String {
-        return """id:${data.id}
-            ${data.txt}: ${if (data.status) "сделано" else "не сделано"}""".trimIndent()
-    }
+class ReminderNote(noteData: TextNoteModel, date: String): Note<TextNoteModel>(noteData, date){//экземпляр напоминалки
+override fun drawCanvas(): String {
+    return """id:${data.id}
+            ${data.txt}: ${if (data.status) "сделано" else "не сделано"}
+            Создано:${createDate}
+            Изменено:${updateDate}""".trimIndent()
+}
 }
 
 class Notebook(): CanvasUnit{// класс для хранения списка заметок. можно добавлять, удалять и отображать все заметки
-    private var notes: MutableList<Note<*>> = mutableListOf()
+private var notes: MutableList<Note<*>> = mutableListOf()
     private var lastId = 0
 
     fun getLastId() = lastId
@@ -95,16 +112,16 @@ class Notebook(): CanvasUnit{// класс для хранения списка 
     }
 }
 
-class ConsoleUI(){
-    fun showMenuList(items: List<String>): Int{
-        println("Выберите действие:")
-        var k = 1
-        for (i in items){
-            println("$k) $i")
+class ConsoleUI(){//выбор пунктов меню, отображение элемента, считывание строки/числа
+fun showMenuList(items: List<String>): Int{
+    println("Выберите действие:")
+    var k = 1
+    for (i in items){
+        println("$k) $i")
         k += 1
-        }
-        return readInt("Введите номер выбранной команды: ")
     }
+    return readInt("Введите номер выбранной команды: ")
+}
     fun showCanvas(canvas: CanvasUnit){
         println(canvas.drawCanvas())
     }
@@ -120,8 +137,8 @@ class ConsoleUI(){
     }
 }
 
-class Menu(){
-    private val ui = ConsoleUI()
+class Menu(){//основа приложение. бесконечный цикл считывание команд, возможность добавления/изменения/удаления заметок
+private val ui = ConsoleUI()
     private val notebook = Notebook()
 
     fun choice(){
@@ -158,12 +175,16 @@ class Menu(){
             ui.readString("Введите имя заметки:")
         val txt =
             ui.readString("Введите текст заметки:")
-        notebook.add(TextNote(TextNoteModel(notebook.getLastId().toString(),name, txt)))
+        notebook.add(TextNote(
+            TextNoteModel(notebook.getLastId().toString(), name, txt),
+            SimpleDateFormatter(LocalDateTime.now()).format()))
     }
     fun addReminderNote(){
         val txt =
             ui.readString("Введите текст заметки:")
-        notebook.add(ReminderNote(TextNoteModel(notebook.getLastId().toString(),"", txt)))
+        notebook.add(ReminderNote(
+            TextNoteModel(notebook.getLastId().toString(),"", txt),
+            SimpleDateFormatter(LocalDateTime.now()).format()))
     }
 
     fun editNote(){
@@ -178,7 +199,9 @@ class Menu(){
                         is TextNote -> {
                             val newName = ui.readString("Введите новое имя заметки:")
                             val newText = ui.readString("Введите новый текст заметки:")
-                            it.update(TextNoteModel(it.data.id, newName, newText))
+                            it.update(TextNoteModel(it.data.id, newName, newText),
+                                SimpleDateFormatter(LocalDateTime.now()).format()
+                            )
                         }
                         is ReminderNote -> {
                             val newText = ui.readString("Введите новый текст напоминания:")
@@ -189,7 +212,8 @@ class Menu(){
                                     "",
                                     newText,
                                     status = (newStatus == 1)
-                                )
+                                ),
+                                SimpleDateFormatter(LocalDateTime.now()).format()
                             )
                         }
                     }
@@ -220,8 +244,8 @@ class Menu(){
     }
 }
 
-class NoteApp{
-    private val menu = Menu()
+class NoteApp{//создает экземпляр приложения
+private val menu = Menu()
     fun start() = menu.choice()
 }
 
