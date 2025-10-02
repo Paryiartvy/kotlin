@@ -58,25 +58,25 @@ open class Note<Data: HaveId>(initialData: Data, date: String): CanvasUnit{ //б
 }
 
 class TextNote(noteData: TextNoteModel, date: String): Note<TextNoteModel>(noteData, date){// экземпляр текстовой заметки
-override fun drawCanvas(): String{
-    return """id:${data.id}
-            ${data.name}: ${data.txt}
-            Создано:${createDate}
-            Изменено:${updateDate}""".trimIndent()
-}
+    override fun drawCanvas(): String{
+        return """id:${data.id}
+                ${data.name}: ${data.txt}
+                Создано:${createDate}
+                Изменено:${updateDate}""".trimIndent()
+    }
 }
 
 class ReminderNote(noteData: TextNoteModel, date: String): Note<TextNoteModel>(noteData, date){//экземпляр напоминалки
-override fun drawCanvas(): String {
-    return """id:${data.id}
-            ${data.txt}: ${if (data.status) "сделано" else "не сделано"}
-            Создано:${createDate}
-            Изменено:${updateDate}""".trimIndent()
-}
+    override fun drawCanvas(): String {
+        return """id:${data.id}
+                ${data.txt}: ${if (data.status) "сделано" else "не сделано"}
+                Создано:${createDate}
+                Изменено:${updateDate}""".trimIndent()
+    }
 }
 
 class Notebook(): CanvasUnit{// класс для хранения списка заметок. можно добавлять, удалять и отображать все заметки
-private var notes: MutableList<Note<*>> = mutableListOf()
+    private var notes: MutableList<Note<*>> = mutableListOf()
     private var lastId = 0
 
     fun getLastId() = lastId
@@ -113,15 +113,15 @@ private var notes: MutableList<Note<*>> = mutableListOf()
 }
 
 class ConsoleUI(){//выбор пунктов меню, отображение элемента, считывание строки/числа
-fun showMenuList(items: List<String>): Int{
-    println("Выберите действие:")
-    var k = 1
-    for (i in items){
-        println("$k) $i")
-        k += 1
+    fun showMenuList(items: List<String>): Int{
+        println("Выберите действие:")
+        var k = 1
+        for (i in items){
+            println("$k) $i")
+            k += 1
+        }
+        return readInt("Введите номер выбранной команды: ")
     }
-    return readInt("Введите номер выбранной команды: ")
-}
     fun showCanvas(canvas: CanvasUnit){
         println(canvas.drawCanvas())
     }
@@ -138,7 +138,7 @@ fun showMenuList(items: List<String>): Int{
 }
 
 class Menu(){//основа приложение. бесконечный цикл считывание команд, возможность добавления/изменения/удаления заметок
-private val ui = ConsoleUI()
+    private val ui = ConsoleUI()
     private val notebook = Notebook()
 
     fun choice(){
@@ -245,7 +245,7 @@ private val ui = ConsoleUI()
 }
 
 class NoteApp{//создает экземпляр приложения
-private val menu = Menu()
+    private val menu = Menu()
     fun start() = menu.choice()
 }
 
